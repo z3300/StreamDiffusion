@@ -1,11 +1,18 @@
-#!/bin/bash
-cd frontend
-npm install
-npm run build
-if [ $? -eq 0 ]; then
-    echo -e "\033[1;32m\nfrontend build success \033[0m"
-else
-    echo -e "\033[1;31m\nfrontend build failed\n\033[0m" >&2  exit 1
+set -euo pipefail
+cd "$(dirname "$0")"
+. .venv/bin/activate
+
+# Use project-local HF cache if present (no re-downloads)
+export HF_HOME="$PWD/.hf-cache"
+
+# Safer first-run defaults
+export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
+
+cd demo/realtime-img2img
+
+# Restore engines if we have an archive and no engines present yet
+if [ ! -d engines ] && [ -f ../../artifacts/engines-img2img-trt9-batch1.tgz ]; then
+  tar -xzf ../../artifacts/engines-img2img-trt9-batch1.tgz
 fi
-cd ../
-python3 main.py --port 7860 --host 0.0.0.0 
+
+python main.py --acceleration tensorrt
